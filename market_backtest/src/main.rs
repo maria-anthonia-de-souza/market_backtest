@@ -1,11 +1,7 @@
-mod backtest;
-mod data;
-mod indicators;
-mod metrics;
-mod strategy;
+use market_backtest::{data, metrics};
 
 fn main() {
-    let candles = data::load_csv("data/sample.csv").expect("Failed to load data");
+    let candles = data::load_csv("data/SPDR_etf.csv").expect("Failed to load data");
     println!("Loaded {} candles", candles.len());
 
     for c in &candles {
@@ -22,7 +18,7 @@ fn main() {
         let sharpe_ratios = metrics::monte_carlo_sharpe(avr, std_dev, rf, n_sims);
 
         let avg_sharpe = sharpe_ratios.iter().sum::<f64>() / sharpe_ratios.len() as f64;
-        println!("Monte Carlo Average SR: {:.4}", avg_sharpe);
+        println!("   - Monte Carlo Average SR: {:.4}", avg_sharpe);
     } else {
         eprintln!("Not enough data points");
     }

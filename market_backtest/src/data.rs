@@ -1,6 +1,7 @@
-use serde::Deserialize;
 use chrono::NaiveDate;
+use serde::Deserialize;
 use std::error::Error;
+use std::io::Read;
 
 #[derive(Debug, Deserialize)]
 pub struct Candle {
@@ -29,8 +30,17 @@ mod date_format {
     }
 }
 
-pub fn load_csv(path: &str) -> Result<Vec<Candle>, Box<dyn Error>> {
+pub fn load_csv_from_reader<R: Read>(reader: R) -> Result<Vec<Candle>, csv::Error> {
+    let mut rdr = csv::Reader::from_reader(reader);
+    let mut candles = Vec::new();
+    for result in rdr.deserialize() {
+        let record: Candle = result?;
+        candles.push(record);
+    }
+    Ok(candles)
+}
 
+pub fn load_csv(path: &str) -> Result<Vec<Candle>, Box<dyn Error>> {
     let mut rdr = csv::Reader::from_path(path)?; //opens file under the hood and builds csv reader  
     let mut data = Vec::new(); //vec to collect parsed candle rows 
     // rep the price movement of a financial instrument (ex. stock, crypto)
