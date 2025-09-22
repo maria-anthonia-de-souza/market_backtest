@@ -39,7 +39,10 @@ mod date_format {
                 return Ok(date);
             }
         }
-        Err(serde::de::Error::custom(format!("Invalid date format: {}", s)))
+        Err(serde::de::Error::custom(format!(
+            "Invalid date format: {}",
+            s
+        )))
     }
 }
 
@@ -65,6 +68,9 @@ pub fn load_csv(path: &Path) -> Result<Vec<Candle>, Box<dyn Error>> {
     Ok(data)
 }
 
+#[derive(Debug, Deserialize)]
+pub struct MaturityValue(#[serde(deserialize_with = "csv::invalid_option")] Option<f64>);
+
 //
 // --------------------
 // Risk-free Rate Struct & Loader
@@ -76,7 +82,7 @@ pub struct RiskFreeRateRow {
 
     // Flatten other columns dynamically and parse as Option<f64> directly
     #[serde(flatten)]
-    pub maturities: HashMap<String, Option<f64>>,
+    pub maturities: HashMap<String, MaturityValue>,
 }
 
 /// Load a daily series of risk-free returns from a Treasury CSV.
@@ -86,12 +92,16 @@ pub fn load_risk_free_series<P: AsRef<Path>>(
     maturity: &str,
 ) -> Result<Vec<f64>, Box<dyn Error>> {
     let file = File::open(path)?;
-    let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
+    let mut rdr = ReaderBuilder::new()
+        .has_headers(true)
+        .flexible(true)
+        .from_reader(file);
     let mut rf_returns = Vec::new();
 
     for result in rdr.deserialize::<RiskFreeRateRow>() {
         let row = result?;
-        if let Some(Some(rate)) = row.maturities.get(maturity) {
+
+        if let Some(rate) = row.maturities.get(maturity).and_then(|rate| rate.0) {
             let annual = rate / 100.0; // convert % to decimal
             let daily = (1.0 + annual).powf(1.0 / 252.0) - 1.0;
             rf_returns.push(daily);
@@ -100,8 +110,6 @@ pub fn load_risk_free_series<P: AsRef<Path>>(
 
     Ok(rf_returns)
 }
-
-
 
 // use chrono::NaiveDate;
 // use serde::Deserialize;
