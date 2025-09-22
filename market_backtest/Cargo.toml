@@ -10,6 +10,7 @@ chrono = "0.4"                                     # for date handling
 statrs = "0.16"                                    # statistics later (Sharpe ratio etc.)
 rand = "0.8"
 rand_distr = "0.4"
+clap.workspace = true
 
 # Cargo.toml in MARKET_BACKTEST root
 [lib]
